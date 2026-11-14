@@ -1,12 +1,13 @@
 #' calculateMetricsByCU 
 #'
 #' this function loops through a data set of CU spawner time series and applies the calcMetrics() function
-#' @param cu.file a data frame with CU time series. REQUIRED variables are  CU_ID (e.g., SEL-24-05), CU_Name (e.g., Meziadin)	Species (e.g., Sockeye), Year,	SpnForAbd_Wild	(Spawner estimate used for abundance metrics), SpnForTrend_Wild	(spawner estimate used for trend metrics) Abd_StartYr (first year to use for abundance metric),	UseYear (T/F whether this year's estimate can be used for metric calculations). Note, for most CUs, SpnForAbd_Wild and SpnForTrend_Wild have the same values. However, for Fraser Sockeye CUs, effective female spawners are used for trend metrics and effective total spawners for abundance metrics). OPTIONAL variables that are not used for metric calculations but may be used in various diagnostics that provide context:  SpnForAbd_Total,	SpnForTrend_Total,	Recruits_Wild,	Recruits_Total..
-#' @param cu.info a data frame with specifications for each CU. Required variables are Species (e.g., Sockeye), Species_Short (e.g., Sk), CU_ID (e.g., SEL-24-05), CU_Name (e.g., Meziadin),DataQualkIdx (one of Abs_Abd or Rel_Idx), AbdMetric (T/F is relative abundance metric applicable for this CU?), AbsAbdMetric (T/F is absolute abundance metric applicable for this CU?), ShortTrendMetric (T/F for x generation slope metric), LongTrendMetric (T/F for long-term trend metric),PercentileMetric (T/F for percentile metric, which is not currently used in rapid status decision tree), Avg_Gen (integer with average generation time),	Cyclic (T/F whether CU is cyclic),	Cyc_Dom and Cyc_Dom_Year (index and base year for dominant cycle, see below), TrendNumGen (number of generations for slope metric),	TrendExtraYears (any extra years for slope metric? For WSP =0, for some COSEWIC = 1), 	TrendLog (T/F for log-transform before slope calc. WSP: True),	TrendSmooth (T/F for generation smoothing before slope calc. WSP: T for most sockeye, Coho, F for most Chinook), AvgType (type of average used for generational average. WSP: always 'geomean'),	AvgSmooth (T/F for smoothing before average. WSP :almost always F),	AvgRecentExcl (T/F for excluding the most recent generation from long-term average. WSP: always F)	LongTrendMinYears (minimum number of years for long-term calculation. WSP: always 15),	RelAbd_AvgData (EXPLAIN THIS ONE? STILL USED?),	RelAbd_LBM and RelAbd_UBM (Lower and upper benchmark for Relative Abundance Metric. WSP: generally Sgen and 80% Smsy, where available),	AbsAbd_LBM	and AbsAbd_UBM (lower and upper benchmarks for absolute abundance metric. WSP: 1,000 and 10,000), LongTrend_LBM	and LongTrend_UBM (lower and upper benchmarks for long-term trend metric. WSP: 0.5 and 0.75), PercChange_LBM and PercChange_UBM	(lower and upper benchmark for slope metric. WSP: -25 and -15), ProbDeclBelowLBM_LBM and ProbDeclBelowLBM_UBM (lower and upper benchmarks for probability of decline. WSP: NA),	Trends_StartYr (first year for which trend time series can be used), Abd_StartYr (first year for which abundance time series can be used).  Note: some CUs use different time series for trend metrics and abundance metrics (see above).
+#' @param cu.file a data frame with CU time series. REQUIRED variables are  CU_ID (e.g., SEL-24-05), CU_Name (e.g., Meziadin)	Species (e.g., Sockeye), Year,	SpnForAbd_Wild	(Spawner estimate used for abundance metrics), SpnForTrend_Wild	(spawner estimate used for trend metrics). Note, for most CUs, SpnForAbd_Wild and SpnForTrend_Wild have the same values. However, for Fraser Sockeye CUs, effective female spawners are used for trend metrics and effective total spawners for abundance metrics). OPTIONAL variables that are not used for metric calculations but may be used in various diagnostics that provide context:  SpnForAbd_Total,	SpnForTrend_Total,	Recruits_Wild,	Recruits_Total.
+#' @param cu.info a data frame with specifications for each CU. Required variables are Species (e.g., Sockeye), Species_Short (e.g., Sk), CU_ID (e.g., SEL-24-05), CU_Name (e.g., Meziadin),DataQualkIdx (one of Abs_Abd or Rel_Idx), AbdMetric (T/F is relative abundance metric applicable for this CU?), AbsAbdMetric (T/F is absolute abundance metric applicable for this CU?), ShortTrendMetric (T/F for x generation slope metric), LongTrendMetric (T/F for long-term trend metric),PercentileMetric (T/F for percentile metric, which is not currently used in rapid status decision tree), Avg_Gen (integer with average generation time),	Cyclic (T/F whether CU is cyclic),	Cyc_Dom and Cyc_Dom_Year (index and base year for dominant cycle, see below), TrendNumGen (number of generations for slope metric),	TrendExtraYears (any extra years for slope metric? For WSP =0, for some COSEWIC = 1), 	TrendLog (T/F for log-transform before slope calc. WSP: True),	TrendSmooth (T/F for generation smoothing before slope calc. WSP: T for most sockeye, Coho, F for most Chinook), AvgType (type of average used for generational average. WSP: always 'geomean'),	AvgSmooth (T/F for smoothing before average. WSP :almost always F),	AvgRecentExcl (T/F for excluding the most recent generation from long-term average. WSP: always F)	LongTrendMinYears (minimum number of years for long-term calculation. WSP: always 15),	RelAbd_AvgData (Type of average to be used for relative abundance, options are "regular" or "smoothed"),	RelAbd_LBM and RelAbd_UBM (Lower and upper benchmark for Relative Abundance Metric. WSP: generally Sgen and 80% Smsy, where available),	AbsAbd_LBM	and AbsAbd_UBM (lower and upper benchmarks for absolute abundance metric. WSP: 1,000 and 10,000), LongTrend_LBM	and LongTrend_UBM (lower and upper benchmarks for long-term trend metric. WSP: 0.5 and 0.75), PercChange_LBM and PercChange_UBM	(lower and upper benchmark for slope metric. WSP: -25 and -15), ProbDeclBelowLBM_LBM and ProbDeclBelowLBM_UBM (lower and upper benchmarks for probability of decline. WSP: NA).  Note: some CUs use different time series for trend metrics and abundance metrics (see above).
 #' @param cu.cyclic.bm if the data set includes highly cyclic Fraser sockeye CUs, an extra input file is needed. This is a data frame with the following required variables: CU_ID, CU_Name,Cycle,cyc,RelAbd_LBM,RelAbd_UBM. 'Cycle' is the base year (one of 1950-1953) and cyc is the corresponding cycle line index (1951=1,1952=2,1953=3,1950=4)
 #' @param retro.start.use first year for the retrospective metrics calculations (if data are available)
 #' @param out.label label to use in the filenames for the output
 #' @param out.filepath folder for storing the output files 
+#' @param diagnostics.out if TRUE, generate a csv file with intermediate results before applying CU-specific usability specifications.
 #' @keywords trend
 #' @export
 
@@ -17,7 +18,8 @@
 calculateMetricsByCU <- function(cu.file,cu.info,cyclic.cu.bm = NULL,
                                  retro.start.use = 1995,
 								 out.label = "MetricsOut",
-								 out.filepath = ""){
+								 out.filepath = "",
+								 diagnostics.out = FALSE){
   
 # retro.start.use start year for retrospective calculation of metrics  
 # WARNING: THIS MUST INCLUDE AT LEAST 4 YEARS (so that  all 4 cycle-specific BM calc get used to populate outputs below; crashes otherwise!)
@@ -264,6 +266,27 @@ print("Flag 1--------------------")
 
 
   } # end if have at least 5 obs
+  
+  # if don't have at least 5 non-zero obs, fill in NA values for all years
+  if(!(sum(!is.na(cu.series))>5 &  sum(cu.series>0,na.rm=TRUE)>5)){
+  
+	metrics.labels <- c(rep("RelAbd", length(retro.start.use:last(cu.yrs))), rep("AbsAbd", length(retro.start.use:last(cu.yrs))),
+                        rep("LongTrend", length(retro.start.use:last(cu.yrs))), rep("PercChange", length(retro.start.use:last(cu.yrs))),
+                        rep("ProbDeclBelowLBM", length(retro.start.use:last(cu.yrs))), rep("Percentile", length(retro.start.use:last(cu.yrs)))
+                        )
+
+    metrics.tmp <- data.frame(CU_ID = cu.id, Species=cu.species, Stock=cu.name, Label=series.do, 
+	Year = retro.start.use:last(cu.yrs), Metric=metrics.labels, Value=NA, LBM=NA, UBM=NA, Status=NA)
+
+    # in case the first one it tries has no data
+    start.new.output <- i == 1 & series.do == series.list[1]
+    if(!start.new.output){metrics.cu.out <-  rbind(metrics.cu.out,metrics.tmp)  }
+    if(start.new.output){metrics.cu.out <- metrics.tmp }
+	 
+	 
+ 
+  } # end if don't do any metrics calcs
+  
   } # end looping through series
   } # end if have  matching CU_ID in the lookup file
 
@@ -308,12 +331,13 @@ absabd.fix.idx <- grepl("AbsAbd", metrics.cu.out.cleaned$Metric) & unlist(metric
 shorttrend.fix.idx <- grepl("ShortTrend", metrics.cu.out.cleaned$Metric) & unlist(metrics.cu.out.cleaned$CU_ID) %in%  not.shorttrend.list
 longtrend.fix.idx <- grepl("LongTrend", metrics.cu.out.cleaned$Metric) & unlist(metrics.cu.out.cleaned$CU_ID) %in%  not.longtrend.list
 
-
+if(diagnostics.out){
 write.csv(metrics.cu.out.cleaned,
- paste0(out.filepath,"/",out.label,"_METRICS_FILE_BY_CU_PRE_CLEAN.csv"),
+ paste0(out.filepath,"/",out.label,"_IntermediateResults_BeforeCleaning.csv"),
  row.names=FALSE)
+ }
 
-# GP New 2024-05-28: Extract Gen Avg  so can merge back in later (get deleted below of AbsAbd/RelAbd metrics are turned off)
+# GP New 2024-05-28: Extract Gen Avg  so can merge back in later (get deleted below if AbsAbd/RelAbd metrics are turned off)
 gen.avg.used.df <- metrics.cu.out.cleaned %>% dplyr::filter(Metric == "RelAbd") %>% select(CU_ID, Year,Value)
 write.csv(gen.avg.used.df,  paste0(out.filepath,"/",out.label,"_GenerationalAvg_Values.csv"),row.names=FALSE)
 
